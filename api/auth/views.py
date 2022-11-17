@@ -42,14 +42,16 @@ class SignUp(Resource):
 
 
         new_user=User(
-            username=data.get('username'),
-            email=data.get('email'),
-            password_hash=generate_password_hash(data.get('password'))            
-        )
+                username=data.get('username'),
+                email=data.get('email'),
+                password_hash=generate_password_hash(data.get('password'))
+            )
 
 
-        new_user.sawe()
-        pass
+        new_user.save()
+        
+
+        return new_user, HTTPStatus.CREATED
 
 @auth_namespace.route('/login')
 class Login(Resource):
