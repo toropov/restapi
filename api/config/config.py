@@ -3,10 +3,15 @@ from decouple import config
 from datetime import timedelta
 
 class Config:
+
+# ключи создаются в интерпретаторе
+# >>> import secrets
+# >>> secrets.token.hex(12)
+
     SECRET_KEY=config('SECRET_KEY','Secret')
+    JWT_SECRET_KEY=config('JWT_SECRET_KEY')    
     JWT_ACCESS_TOKEN_EXPIRES=timedelta(minutes=30)
     JWT_REFRESH_TOKEN_EXPIRES=timedelta(minutes=30)
- #   JWT_SECRET_KEY=config('JWT_SECRET_KEY')
 
 
 BASE_DIR=os.path.dirname(os.path.realpath(__file__))
