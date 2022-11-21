@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from http import HTTPStatus
 from flask_jwt_extended import (create_access_token, 
 create_refresh_token,jwt_required, get_jwt_identity)
+from werkzeug.exceptions import Conflict, BadRequest
 
 auth_namespace = Namespace('auth',description="namespace for authentification")
 
@@ -51,18 +52,23 @@ class SignUp(Resource):
 
         data=request.get_json()
 
+        try:
 
-        new_user=User(
-                username=data.get('username'),
-                email=data.get('email'),
-                password_hash=generate_password_hash(data.get('password'))
-            )
+            new_user=User(
+                    username=data.get('username'),
+                    email=data.get('email'),
+                    password_hash=generate_password_hash(data.get('password'))
+                )
 
 
-        new_user.save()
+            new_user.save()
+
+            return new_user, HTTPStatus.CREATED
+        except Exception as e:
+             raise Conflict(f"User with email{data.get('email')} exists")
+            
+
         
-
-        return new_user, HTTPStatus.CREATED
 
 @auth_namespace.route('/login')
 class Login(Resource):
@@ -72,23 +78,29 @@ class Login(Resource):
             Create a JWT pair
         """
 
+
         data=request.get_json()
 
 
-        email=data.get('email'),
+        email=data.get('email')
         password=data.get('password')
-        
-        entity=User.query.filter_by(email=email[0]).first()
 
-        if (entity is not None) and check_password_hash(entity.password_hash, password):
-            access_token=create_access_token(identity=entity.username)
-            refresh_token=create_refresh_token(identity=entity.username)
+        user=User.query.filter_by(email=email).first()
+
+
+        if (user is not None) and check_password_hash(user.password_hash,password):
+            access_token=create_access_token(identity=user.username)
+            refresh_token=create_refresh_token(identity=user.username)
 
             response={
-                'access_token':access_token,
-                'refresh_token':refresh_token,                
+                'acccess_token':access_token,
+                'refresh_token':refresh_token
             }
-        return response, HTTPStatus.OK
+
+            return response, HTTPStatus.OK
+
+
+        raise BadRequest("Invalid Username or password")
 
 @auth_namespace.route('/refresh')
 class Refresh(Resource):

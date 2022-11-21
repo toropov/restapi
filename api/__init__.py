@@ -6,9 +6,9 @@ from .config.config import config_dict
 from .models.orders import Order
 from .models.users import User
 from .utils.db import db
-
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
+from werkzeug.exceptions import NotFound, MethodNotAllowed
 
 
 def create_app(config=config_dict['dev']):  
@@ -27,6 +27,16 @@ def create_app(config=config_dict['dev']):
     jwt=JWTManager(app)
 
     migrate=Migrate(app,db)
+
+    @api.errorhandler(NotFound)
+    def not_found(error):
+        return {"error":"not found"}, 404
+
+    @api.errorhandler(MethodNotAllowed)
+    def Method_Not_Allowed(error):
+        return {"error":"Method Not Allowed"}, 405
+
+    
 
 
 # таблицы создаются следующим образом
