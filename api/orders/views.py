@@ -3,6 +3,7 @@ from http import HTTPStatus
 from flask_jwt_extended import jwt_required,get_jwt_identity
 from ..models.orders import Order
 from ..models.users import User
+from ..utils.db import db
 
 order_namespace = Namespace('orders', description="namespace for orders")
 
@@ -33,9 +34,9 @@ class OrderGetCreate(Resource):
         return orders,HTTPStatus.OK
 
 
-    @order_namespace.expect(order_model)
-    @order_namespace.marshal_with(order_model)
     @jwt_required()
+    @order_namespace.expect(order_model)
+    @order_namespace.marshal_with(order_model)    
     def post(self):
         """
             Разместить новый заказ
@@ -62,43 +63,81 @@ class OrderGetCreate(Resource):
 @order_namespace.route('/order/<int:order_id>')
 class GetUpdateDelete(Resource):
 
+    @order_namespace.marshal_with(order_model)
     def get(self, order_id):
         """
             Получить заказ по id
         """
-        pass
+    
+        order=Order.get_by_id(order_id)
 
+        return order,HTTPStatus.OK
+
+
+    @jwt_required()
+    @order_namespace.expect(order_model)
+    @order_namespace.marshal_with(order_model)    
     def put(self, order_id):
         """
             Обновить заказ по id
         """
-        pass
+        
+        order_to_update=Order.get_by_id(order_id)
 
+        data=order_namespace.payload
+
+        order_to_update.quantity=data['quantity']
+        order_to_update.size=data['size']
+        order_to_update.flavour=data['flavour']
+
+        db.session.commit()
+
+        return order_to_update,HTTPStatus.OK
+
+    @jwt_required()
+    @order_namespace.marshal_with(order_model)    
     def delete(self, order_id):
         """
             Удалить заказ по id
         """
-        pass
+        order_to_delete=Order.get_by_id(order_id)
+        order_to_delete.delete()
+
+        return order_to_delete, HTTPStatus.OK
+
 
 
 @order_namespace.route('/user/<int:user_id>/order/<int:order_id>/')
 class GetSpecificOrderByUser(Resource):
-
+    
+    @jwt_required()
+    @order_namespace.marshal_with(order_model)
     def get(self, user_id, order_id):
         """
             Получить конкретный заказ для покупателя
         """
-        pass
+        user=User.get_by_id(user_id)
+        order=Order.query.filter_by(id=order_id).filter_by(user=user).first()
+
+        return order, HTTPStatus.OK
+
 
 
 @order_namespace.route('/user/<int:user_id>/orders')
 class UserOrders(Resource):
-
+    @jwt_required()
+    @order_namespace.marshal_list_with(order_model)
     def get(self, user_id):
         """
             Получить все заказы конкретного пользователя
         """
-        pass
+        
+        user=User.get_by_id(user_id)
+
+        orders=user.orders
+
+        return orders, HTTPStatus.OK
+
 
 
 @order_namespace.route('/order/status/<int:order_id>')
