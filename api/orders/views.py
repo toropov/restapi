@@ -1,7 +1,8 @@
 from flask_restx import Resource, Namespace, fields
 from http import HTTPStatus
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required,get_jwt_identity
 from ..models.orders import Order
+from ..models.users import User
 
 order_namespace = Namespace('orders', description="namespace for orders")
 
@@ -33,6 +34,7 @@ class OrderGetCreate(Resource):
 
 
     @order_namespace.expect(order_model)
+    @order_namespace.marshal_with(order_model)
     @jwt_required()
     def post(self):
         """
@@ -42,7 +44,19 @@ class OrderGetCreate(Resource):
         data=order_namespace.payload
 
 
-        return data, HTTPStatus.CREATED
+        new_order=Order(
+            size=data['size'],
+            quantity=data['quantity'],
+            flavour=data['flavour']
+        )
+        username=get_jwt_identity()
+        current_user=User.query.filter_by(username=username).first()
+        new_order.user=current_user
+
+        new_order.save()
+
+
+        return new_order, HTTPStatus.CREATED
 
 
 @order_namespace.route('/order/<int:order_id>')
